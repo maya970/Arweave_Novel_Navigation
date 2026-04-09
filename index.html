@@ -3,512 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AO 小说平台 - 去中心化阅读</title>
+    <title>永恒小说 | Arweave 永久书库</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#4f46e5',
-                        secondary: '#10b981',
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; }
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 3px solid #4f46e5;
-            width: 20px;
-            height: 20px;
-            -webkit-animation: spin 1s linear infinite;
-            animation: spin 1s linear infinite;
+        body {
+            background: radial-gradient(circle at center, #1a0f2e 0%, #0a0514 100%);
+            color: #e0d4ff;
+            font-family: system-ui, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        
+        .container {
+            text-align: center;
+            z-index: 10;
+        }
+        
+        .book {
+            font-size: 6rem;
+            animation: bookOpen 4s ease-in-out infinite;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 40px #c4b5fd);
+        }
+        
+        @keyframes bookOpen {
+            0%, 100% { transform: rotateY(0deg); }
+            50% { transform: rotateY(25deg); }
+        }
+        
+        .progress-container {
+            width: 320px;
+            height: 5px;
+            background: rgba(167, 139, 250, 0.15);
+            border-radius: 9999px;
+            overflow: hidden;
+            margin: 40px auto;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, #c4b5fd, #f0d4ff, #e0b5fd);
+            width: 0%;
+            transition: width 4.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 0 25px #c4b5fd;
+        }
+        
+        .title {
+            font-size: 3.2rem;
+            font-weight: 300;
+            letter-spacing: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            font-size: 1.4rem;
+            opacity: 0.85;
+            margin-bottom: 30px;
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col">
-
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center cursor-pointer" onclick="app.navigate('home')">
-                    <span class="text-2xl font-bold text-primary">📚 AO Novel</span>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <button onclick="app.navigate('create')" class="text-gray-600 hover:text-primary font-medium">创作中心</button>
-                    <button onclick="app.showMyNovels()" class="text-gray-600 hover:text-primary font-medium">我的作品</button>
-                    <div id="wallet-container" class="flex items-center space-x-2">
-                        <button id="connect-btn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-                            连接钱包
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+<body>
+    <div class="container">
+        <div class="book">📖</div>
         
-        <!-- View: Home (List Novels) -->
-        <div id="view-home" class="space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 id="home-title" class="text-2xl font-bold text-gray-800">热门小说</h2>
-                <div class="flex space-x-2">
-                    <input type="text" id="search-input" placeholder="搜索小说..." class="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
-                    <button onclick="app.refreshNovels()" class="text-primary hover:underline">刷新</button>
-                </div>
-            </div>
-            <div id="novel-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="col-span-full text-center py-10 text-gray-500">加载中...</div>
-            </div>
+        <h1 class="title">永恒小说</h1>
+        <p class="subtitle">把故事刻进 Arweave 的永恒书页</p>
+        
+        <div class="text-xl tracking-widest text-violet-200 mb-6">正在翻开下一章...</div>
+        
+        <!-- 炫酷进度条 -->
+        <div class="progress-container">
+            <div id="progress" class="progress-bar"></div>
         </div>
-
-        <!-- View: Create Novel -->
-        <div id="view-create" class="hidden max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">创建新小说</h2>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">小说标题</label>
-                    <input type="text" id="new-novel-title" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">简介</label>
-                    <textarea id="new-novel-desc" rows="4" class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none"></textarea>
-                </div>
-                <button onclick="app.createNovel()" class="w-full bg-primary text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition">
-                    立即创建
-                </button>
-            </div>
-        </div>
-
-        <!-- View: Novel Detail -->
-        <div id="view-detail" class="hidden space-y-6">
-            <button onclick="app.navigate('home')" class="text-gray-500 hover:text-gray-800">← 返回列表</button>
-            <div class="bg-white p-8 rounded-xl shadow-sm">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h1 id="detail-title" class="text-3xl font-bold text-gray-900"></h1>
-                        <p id="detail-author" class="text-sm text-gray-500 mt-1"></p>
-                    </div>
-                    <div id="author-controls" class="hidden">
-                        <button onclick="app.showAddChapterModal()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 font-bold shadow-md flex items-center gap-2">
-                            <span>📝</span> 添加新章节
-                        </button>
-                    </div>
-                </div>
-                <p id="detail-desc" class="mt-4 text-gray-700 leading-relaxed"></p>
-            </div>
-
-            <div class="bg-white p-8 rounded-xl shadow-sm">
-                <h3 class="text-xl font-bold mb-4">章节列表</h3>
-                <div id="chapter-list" class="space-y-2"></div>
-            </div>
-        </div>
-
-        <!-- View: Reader -->
-        <div id="view-reader" class="hidden max-w-3xl mx-auto">
-            <button onclick="app.backToDetail()" class="mb-4 text-gray-500 hover:text-gray-800">← 返回目录</button>
-            <div class="bg-white p-10 rounded-xl shadow-lg min-h-[500px]">
-                <h1 id="reader-title" class="text-3xl font-bold mb-8 text-center border-b pb-4"></h1>
-                <div id="reader-content" class="prose max-w-none text-lg leading-loose text-gray-800 whitespace-pre-wrap"></div>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- Modals -->
-    <div id="modal-add-chapter" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-xl w-full max-w-2xl shadow-2xl transform transition-all">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold">添加新章节</h3>
-                <button onclick="document.getElementById('modal-add-chapter').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">✕</button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">章节标题</label>
-                    <input id="chapter-title-input" placeholder="请输入章节标题" class="w-full border p-2 rounded focus:ring-2 focus:ring-primary outline-none">
-                </div>
-                
-                <div class="flex items-center space-x-4 bg-gray-50 p-3 rounded">
-                    <label class="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" id="chapter-is-paid" class="w-4 h-4 text-primary" onchange="document.getElementById('chapter-price-input').disabled = !this.checked">
-                        <span class="font-medium">设为付费章节</span>
-                    </label>
-                    <div class="flex items-center space-x-2">
-                        <span>价格:</span>
-                        <input id="chapter-price-input" type="number" placeholder="0" disabled class="border p-1 rounded w-24 disabled:bg-gray-200 disabled:text-gray-400">
-                        <span class="text-sm text-gray-500 font-bold">AO</span>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">章节内容</label>
-                    <textarea id="chapter-content-input" rows="12" placeholder="在此输入正文内容..." class="w-full border p-2 rounded focus:ring-2 focus:ring-primary outline-none font-mono text-sm"></textarea>
-                </div>
-
-                <div class="flex justify-end space-x-3 pt-4 border-t">
-                    <button onclick="document.getElementById('modal-add-chapter').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">取消</button>
-                    <!-- Fixed: Added explicit Submit button -->
-                    <button onclick="app.addChapter()" class="px-6 py-2 bg-primary text-white rounded font-bold hover:bg-indigo-700 shadow">发布章节</button>
-                </div>
-            </div>
-        </div>
+        
+        <p class="text-xs text-violet-400/70 mt-12">即将跳转至小说永恒书库</p>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 transition-transform duration-300 z-50">
-        Notification
-    </div>
+    <script>
+        // 新小说网站 Arweave 地址
+        const targetUrl = "https://arweave.net/8j-luMpK0JNqeZhh6wnglSql2oapoGwrqWpYab52NT0/";
 
-    <script type="module">
-        import { QuickWallet } from "https://unpkg.com/quick-wallet/dist/quick-wallet.browser.esm.js";
-        import { message, createDataItemSigner, dryrun } from "https://unpkg.com/@permaweb/aoconnect@0.0.56/dist/browser.js";
+        window.onload = function() {
+            const progressBar = document.getElementById('progress');
+            
+            // 启动柔和进度条动画
+            setTimeout(() => {
+                progressBar.style.width = '100%';
+            }, 80);
 
-        const PROCESS_ID = "WvjajApbIYiG7_xoUGl5-tLlHWw6x4S-KX1EI0uDA9k";
-        // Placeholder for AO Token Process ID. User should replace this.
-        const AO_TOKEN_ID = "<AO_TOKEN_PROCESS_ID>"; 
-
-        class App {
-            constructor() {
-                this.wallet = null;
-                this.signer = null;
-                this.novels = [];
-                this.currentNovel = null;
-                this.isMyNovelsMode = false;
-                this.init();
-            }
-
-            async init() {
-                this.bindEvents();
-                this.refreshNovels();
-            }
-
-            bindEvents() {
-                document.getElementById('connect-btn').addEventListener('click', () => this.connectWallet());
-                document.getElementById('search-input').addEventListener('input', (e) => this.filterNovels(e.target.value));
-            }
-
-            async connectWallet() {
-                try {
-                    await QuickWallet.connect(["ACCESS_ADDRESS", "SIGN_TRANSACTION"]);
-                    this.wallet = await QuickWallet.getActiveAddress();
-                    this.signer = createDataItemSigner(QuickWallet);
-                    
-                    this.updateWalletUI();
-                    this.showToast("钱包已连接 ✅");
-                    if (this.currentNovel) this.checkAuthorControls();
-                } catch (err) {
-                    console.error(err);
-                    this.showToast("连接失败: " + err.message);
-                }
-            }
-
-            updateWalletUI() {
-                const container = document.getElementById('wallet-container');
-                container.innerHTML = `
-                    <div class="flex flex-col items-end">
-                        <span class="text-xs text-gray-500 font-mono">${this.wallet.slice(0, 6)}...${this.wallet.slice(-4)}</span>
-                        <span class="text-xs font-bold text-secondary">已连接</span>
-                    </div>
-                `;
-            }
-
-            // Navigation
-            navigate(viewId) {
-                ['home', 'create', 'detail', 'reader'].forEach(v => {
-                    document.getElementById(`view-${v}`).classList.add('hidden');
-                });
-                document.getElementById(`view-${viewId}`).classList.remove('hidden');
-                
-                if (viewId === 'home') {
-                    this.isMyNovelsMode = false;
-                    document.getElementById('home-title').textContent = "热门小说";
-                    this.refreshNovels();
-                }
-            }
-
-            showMyNovels() {
-                if (!this.wallet) return this.showToast("请先连接钱包");
-                this.navigate('home');
-                this.isMyNovelsMode = true;
-                document.getElementById('home-title').textContent = "我的作品";
-                this.renderNovels(this.novels.filter(n => n.Author === this.wallet));
-            }
-
-            // Novel Logic
-            async refreshNovels() {
-                const listEl = document.getElementById('novel-list');
-                listEl.innerHTML = '<div class="col-span-full text-center py-10"><div class="loader mx-auto"></div></div>';
-                
-                try {
-                    const res = await dryrun({
-                        process: PROCESS_ID,
-                        tags: [{ name: "Action", value: "List-Novels" }]
-                    });
-                    
-                    const data = JSON.parse(res.Messages[0].Data);
-                    this.novels = Array.isArray(data) ? data : [];
-                    
-                    if (this.isMyNovelsMode && this.wallet) {
-                        this.renderNovels(this.novels.filter(n => n.Author === this.wallet));
-                    } else {
-                        this.renderNovels(this.novels);
-                    }
-                } catch (e) {
-                    listEl.innerHTML = `<div class="col-span-full text-center text-red-500">加载失败: ${e.message}</div>`;
-                }
-            }
-
-            renderNovels(novels) {
-                const listEl = document.getElementById('novel-list');
-                if (novels.length === 0) {
-                    listEl.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">暂无小说</div>';
-                    return;
-                }
-
-                listEl.innerHTML = novels.map(novel => `
-                    <div class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition border border-gray-100 cursor-pointer flex flex-col h-full" onclick="app.openNovel('${novel.Id}')">
-                        <div class="flex-grow">
-                            <h3 class="text-xl font-bold text-gray-800 mb-2 truncate">${novel.Title}</h3>
-                            <p class="text-gray-500 text-sm mb-4 line-clamp-3">${novel.Description}</p>
-                        </div>
-                        <div class="flex justify-between items-center text-xs text-gray-400 pt-4 border-t mt-2">
-                            <span>作者: ${novel.Author.slice(0, 4)}...</span>
-                            <span>${novel.Chapters ? Object.keys(novel.Chapters).length : 0} 章节</span>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            filterNovels(term) {
-                let source = this.novels;
-                if (this.isMyNovelsMode && this.wallet) {
-                    source = this.novels.filter(n => n.Author === this.wallet);
-                }
-                const filtered = source.filter(n => 
-                    n.Title.toLowerCase().includes(term.toLowerCase()) || 
-                    n.Description.toLowerCase().includes(term.toLowerCase())
-                );
-                this.renderNovels(filtered);
-            }
-
-            async createNovel() {
-                if (!this.wallet) return this.showToast("请先连接钱包");
-                const title = document.getElementById('new-novel-title').value;
-                const desc = document.getElementById('new-novel-desc').value;
-                if (!title || !desc) return this.showToast("请填写完整信息");
-
-                this.showToast("正在创建小说...");
-                try {
-                    await message({
-                        process: PROCESS_ID,
-                        tags: [
-                            { name: "Action", value: "Create-Novel" },
-                            { name: "Title", value: title },
-                            { name: "Description", value: desc }
-                        ],
-                        signer: this.signer
-                    });
-                    this.showToast("创建成功！");
-                    document.getElementById('new-novel-title').value = '';
-                    document.getElementById('new-novel-desc').value = '';
-                    this.navigate('home');
-                } catch (e) {
-                    this.showToast("创建失败: " + e.message);
-                }
-            }
-
-            async openNovel(id) {
-                this.currentNovel = this.novels.find(n => n.Id === id);
-                if (!this.currentNovel) return;
-
-                document.getElementById('detail-title').textContent = this.currentNovel.Title;
-                document.getElementById('detail-desc').textContent = this.currentNovel.Description;
-                document.getElementById('detail-author').textContent = "作者: " + this.currentNovel.Author;
-                
-                this.checkAuthorControls();
-                this.renderChapters();
-                this.navigate('detail');
-            }
-
-            checkAuthorControls() {
-                if (!this.currentNovel) return;
-                const isOwner = this.wallet && this.wallet === this.currentNovel.Author;
-                const controls = document.getElementById('author-controls');
-                if (isOwner) controls.classList.remove('hidden');
-                else controls.classList.add('hidden');
-            }
-
-            renderChapters() {
-                const list = document.getElementById('chapter-list');
-                const chapters = this.currentNovel.Chapters || [];
-                
-                if (chapters.length === 0) {
-                    list.innerHTML = '<div class="text-gray-500 italic py-4 text-center bg-gray-50 rounded">暂无章节</div>';
-                    return;
-                }
-
-                list.innerHTML = chapters.map((chap, idx) => {
-                    const index = idx + 1;
-                    const isPaid = chap.IsPaid;
-                    const price = chap.Price;
-                    
-                    return `
-                        <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition border border-transparent hover:border-gray-200">
-                            <div class="flex items-center">
-                                <span class="font-bold text-gray-500 mr-4 w-8">#${index}</span>
-                                <div>
-                                    <div class="font-medium text-gray-900">${chap.Title}</div>
-                                    <div class="text-xs text-gray-400 mt-1">${chap.WordCount || 0} 字</div>
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-4">
-                                ${isPaid 
-                                    ? `<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-medium border border-yellow-200">付费: ${price} AO</span>` 
-                                    : '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded font-medium border border-green-200">免费</span>'
-                                }
-                                <button onclick="app.readChapter(${index}, ${isPaid}, ${price})" class="text-primary font-bold hover:text-indigo-800 hover:underline px-2">阅读</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            showAddChapterModal() {
-                document.getElementById('chapter-title-input').value = '';
-                document.getElementById('chapter-content-input').value = '';
-                document.getElementById('chapter-is-paid').checked = false;
-                document.getElementById('chapter-price-input').value = '';
-                document.getElementById('chapter-price-input').disabled = true;
-                document.getElementById('modal-add-chapter').classList.remove('hidden');
-            }
-
-            async addChapter() {
-                const title = document.getElementById('chapter-title-input').value;
-                const content = document.getElementById('chapter-content-input').value;
-                const isPaid = document.getElementById('chapter-is-paid').checked;
-                const price = document.getElementById('chapter-price-input').value || "0";
-
-                if (!title || !content) return this.showToast("请填写完整章节信息");
-
-                this.showToast("正在发布章节...");
-                try {
-                    await message({
-                        process: PROCESS_ID,
-                        tags: [
-                            { name: "Action", value: "Add-Chapter" },
-                            { name: "NovelId", value: this.currentNovel.Id },
-                            { name: "Title", value: title },
-                            { name: "IsPaid", value: isPaid ? "true" : "false" },
-                            { name: "Price", value: price }
-                        ],
-                        data: content,
-                        signer: this.signer
-                    });
-                    
-                    this.showToast("发布成功！");
-                    document.getElementById('modal-add-chapter').classList.add('hidden');
-                    
-                    await new Promise(r => setTimeout(r, 1000));
-                    const res = await dryrun({
-                        process: PROCESS_ID,
-                        tags: [{ name: "Action", value: "Get-Novel" }, { name: "NovelId", value: this.currentNovel.Id }]
-                    });
-                    this.currentNovel = JSON.parse(res.Messages[0].Data);
-                    this.renderChapters();
-                } catch (e) {
-                    this.showToast("发布失败: " + e.message);
-                }
-            }
-
-            async readChapter(index, isPaid, price) {
-                const isAuthor = this.wallet && this.wallet === this.currentNovel.Author;
-                if (isPaid && !isAuthor && !this.wallet) return this.showToast("付费章节请先连接钱包");
-
-                this.showToast("正在加载章节...");
-                try {
-                    const res = await dryrun({
-                        process: PROCESS_ID,
-                        tags: [
-                            { name: "Action", value: "Read-Chapter" },
-                            { name: "NovelId", value: this.currentNovel.Id },
-                            { name: "ChapterIndex", value: index.toString() }
-                        ],
-                        Owner: this.wallet || ""
-                    });
-
-                    const data = JSON.parse(res.Messages[0].Data);
-
-                    if (data.Error === "Payment required.") {
-                        if (confirm(`该章节需要支付 ${price} AO。确认购买吗？`)) {
-                            await this.buyChapter(index, price);
-                            this.readChapter(index, isPaid, price); 
-                        }
-                    } else if (data.Content) {
-                        this.showReader(data.Title, data.Content);
-                    } else {
-                        this.showToast("无法读取章节内容");
-                    }
-                } catch (e) {
-                    console.error(e);
-                    this.showToast("读取错误: " + e.message);
-                }
-            }
-
-            async buyChapter(index, price) {
-                this.showToast("正在发起支付...");
-                try {
-                    // Send AO Tokens to the Novel Process
-                    await message({
-                        process: AO_TOKEN_ID,
-                        tags: [
-                            { name: "Action", value: "Transfer" },
-                            { name: "Recipient", value: PROCESS_ID },
-                            { name: "Quantity", value: price.toString() },
-                            { name: "X-Action", value: "Buy-Chapter" },
-                            { name: "X-NovelId", value: this.currentNovel.Id },
-                            { name: "X-ChapterIndex", value: index.toString() }
-                        ],
-                        signer: this.signer
-                    });
-                    
-                    await new Promise(r => setTimeout(r, 2000));
-                    this.showToast("购买成功！");
-                } catch (e) {
-                    this.showToast("购买失败: " + e.message);
-                    throw e;
-                }
-            }
-
-            showReader(title, content) {
-                document.getElementById('reader-title').textContent = title;
-                document.getElementById('reader-content').textContent = content;
-                this.navigate('reader');
-            }
-
-            backToDetail() {
-                this.navigate('detail');
-            }
-
-            showToast(msg) {
-                const toast = document.getElementById('toast');
-                toast.textContent = msg;
-                toast.classList.remove('translate-y-20');
-                setTimeout(() => toast.classList.add('translate-y-20'), 3000);
-            }
-        }
-
-        window.app = new App();
+            // 4.8秒后自动跳转（手感最舒服的时间）
+            setTimeout(() => {
+                window.location.href = targetUrl;
+            }, 4800);
+        };
     </script>
 </body>
 </html>
