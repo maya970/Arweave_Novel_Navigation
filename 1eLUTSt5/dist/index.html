@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Permaweb 小说 · Arweave</title>
+    <meta
+      name="description"
+      content="Permaweb 小说：Arweave 上链连载，书库、最近章节、目录与阅读；#/about 提供中英功能说明。"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell novel-app">
+      <header class="topbar novel-topbar">
+        <div class="brand-block">
+          <span class="brand-mark novel-brand-mark" role="img" aria-label="logo"></span>
+          <div>
+            <h1 class="brand-title">Permaweb 小说</h1>
+            <p class="brand-subtitle">Arweave 永久存储 · 链上阅读</p>
+          </div>
+        </div>
+        <div class="wallet-block novel-nav-wallet">
+          <nav class="novel-nav" aria-label="主导航">
+            <a href="#/" class="novel-nav-link" data-route>小说列表</a>
+            <a href="#/feed" class="novel-nav-link" data-route>最近章节</a>
+            <a href="#/about" class="novel-nav-link" data-route>说明 About</a>
+            <a href="#/upload" class="novel-nav-link" data-route>上传作品</a>
+          </nav>
+          <button id="connect-wallet-btn" type="button" class="connect-btn">连接钱包</button>
+        </div>
+      </header>
+
+      <p id="global-status" class="status novel-global-status" role="status"></p>
+
+      <main id="novel-root" class="novel-main"></main>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

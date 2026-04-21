@@ -1,0 +1,29 @@
+{
+  "name": "arweave-ao-template-lite",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "ISC",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs && npx --yes serve dist -p 5173",
+    "wallet:new": "node scripts/generate-wallet.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "deploy:up": "node scripts/deploy-up.mjs",
+    "ship": "node scripts/deploy-up.mjs",
+    "agents:ack": "node scripts/agents-ack.mjs",
+    "policy:check": "node scripts/agent-policy-check.mjs"
+  },
+  "dependencies": {
+    "@ardrive/turbo-sdk": "^1.41.0",
+    "@permaweb/libs": "^0.0.86",
+    "arweave": "^1.15.7",
+    "dompurify": "^3.3.1",
+    "esbuild": "^0.27.3",
+    "marked": "^17.0.2",
+    "mime-types": "^3.0.2"
+  },
+  "devDependencies": {
+    "permaweb-deploy": "^3.2.1"
+  }
+}
